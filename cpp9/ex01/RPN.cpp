@@ -50,7 +50,11 @@ int RPN::calculate(std::stack<int> *stak, int *res, std::string str)
 			else if (str.at(i) == '-')
 				stak->push(a - b);
 			else if (str.at(i) == '/')
+			{
+				if (b == 0)
+					throw std::logic_error("division by 0");
 				stak->push(a / b);
+			}
 		}
 		else if (str.at(i) != ' ')
 		{

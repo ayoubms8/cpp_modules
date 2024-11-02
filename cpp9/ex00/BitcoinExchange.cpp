@@ -13,7 +13,7 @@ BitcoinExchange &BitcoinExchange::operator=(BitcoinExchange const &copy)
 {
 	if (this != &copy)
 	{
-		//nothing
+		// nothing
 	}
 	return (*this);
 }
@@ -24,11 +24,21 @@ BitcoinExchange::~BitcoinExchange()
 
 void get_date(int *year, int *month, int *day, std::string str)
 {
+	if (str.size() != 10 || str[4] != '-' || str[7] != '-')
+		return;
+
+	for (size_t i = 0; i < str.size(); i++)
+	{
+		if (i != 4 && i != 7 && !std::isdigit(str.at(i)))
+			return;
+	}
+
 	std::string::size_type pos, pos2;
 
 	pos = str.find('-');
-    if (pos != std::string::npos) {
-        *year = atoi(str.substr(0, pos).c_str());
+	if (pos != std::string::npos)
+	{
+		*year = atoi(str.substr(0, pos).c_str());
 		pos2 = str.find('-', pos + 1);
 		if (pos2 != std::string::npos)
 		{
@@ -36,15 +46,14 @@ void get_date(int *year, int *month, int *day, std::string str)
 			*day = atoi(str.substr(pos2 + 1).c_str());
 		}
 		else
-			std::cerr << "bad input" << std::endl;
-    }
+			std::cout << "bad input" << std::endl;
+	}
 	else
-		std::cerr << "bad input" << std::endl;
+		std::cout << "bad input" << std::endl;
 }
 
-int	valid_date(int year, int month, int day)
+bool valid_date(int year, int month, int day)
 {
-	if (year )
 	if (month > 12 || month < 1 || day > 31 || day < 1)
 		return 0;
 	if (month == 2 && day > 29)
@@ -54,41 +63,49 @@ int	valid_date(int year, int month, int day)
 	return 1;
 }
 
+bool is_valid_float(const std::string &s)
+{
+	std::stringstream ss(s);
+	float f;
+	if (!(ss >> f))
+        return false;
+    if (!ss.eof())
+        ss >> std::ws;
+    return (ss.eof() && !ss.fail());
+}
+
 int BitcoinExchange::exchange(std::string &key, std::string &value, std::map<std::string, std::string> &data, double *res)
 {
 	int year, month, day;
-	int year2, month2, day2;
+	int k_year, k_month, k_day;
 	double val, val2;
 
-	get_date(&year2, &month2, &day2, key);
+	get_date(&k_year, &k_month, &k_day, key);
+	if (!is_valid_float(value))
+		return (std::cout << "Error: invalid number" << std::endl, 0);
 	val2 = atof(value.c_str());
-	if (val2 < 0 || val2 >= 1000 || !valid_date(year2, month2, day2))
+	if (val2 < 0 || val2 > 1000 || !valid_date(k_year, k_month, k_day))
 	{
-		if (!valid_date(year2, month2, day2))
-			std::cerr << "Error: invalid date" << std::endl;
-		else if (val2 >= 1000)
-			std::cerr << "Error: too large a number" << std::endl;
+		if (!valid_date(k_year, k_month, k_day))
+			std::cout << "Error: invalid date" << std::endl;
+		else if (val2 > 1000)
+			std::cout << "Error: too large a number" << std::endl;
 		else
-			std::cerr << "Error: not a positive number." << std::endl;
+			std::cout << "Error: not a positive number." << std::endl;
 		return 0;
 	}
-	
+
 	std::map<std::string, std::string>::iterator it;
-	for(it = data.end(); it != data.begin(); it--) {
-   		get_date(&year, &month, &day, it->first);
+	for (it = data.end(); true;)
+	{
+		it--;
+		get_date(&year, &month, &day, it->first);
 		val = atof(it->second.c_str());
-		if (val )
-		if (year2 == year)
-		{
-			if (month2 == month)
-			{
-				if (day2 >= day)
-				{
-					*res = val * val2;
-					return (1);
-				}
-			}
-		}
+		if ((k_year == year && k_month == month && k_day >= day) \
+		 	|| (k_year == year && k_month > month) || k_year > year) 
+			return (*res = val * val2, 1);
+		if (it == data.begin())
+			return (*res = val * val2, 1);
 	}
 	return (0);
 }
